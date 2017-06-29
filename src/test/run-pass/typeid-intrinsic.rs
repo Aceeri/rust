@@ -16,6 +16,7 @@
 extern crate typeid_intrinsic_aux1 as other1;
 extern crate typeid_intrinsic_aux2 as other2;
 
+use core::intrinsics::type_id;
 use std::hash::{SipHasher, Hasher, Hash};
 use std::any::TypeId;
 
@@ -91,4 +92,21 @@ pub fn main() {
     // Check fn pointer against collisions
     assert!(TypeId::of::<fn(fn(A) -> A) -> A>() !=
             TypeId::of::<fn(fn() -> A, A) -> A>());
+
+    // Check sanity of lifetimes
+    assert_eq!(TypeId::of::<&other1::A>(), TypeId::of::<&'static other1::A>());
+
+    let owned_string = "Owned string".to_owned();
+    let other_owned_string = "Other owned string".to_owned();
+    {
+        let scoped_string = &owned_string;
+        intrinsic_lifetime_typeids(scoped_string, "static");
+        intrinsic_lifetime_typeids(scoped_string, scoped_string);
+        intrinsic_lifetime_typeids(scoped_string, &other_owned_string);
+    }
 }
+
+fn intrinsic_lifetime_typeids<'a, 'b>(_: &'a str, _: &'b str) {
+    assert_eq!(core::intrinsics::type_id::<&'a str>(), core::intrinsics::type_id::<&'b str>()); 
+}
+
